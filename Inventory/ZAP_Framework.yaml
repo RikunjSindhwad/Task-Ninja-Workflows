@@ -132,12 +132,12 @@ jobs:
   name: "activeScan"
   type: "activeScan"
 - parameters:
-    template: "traditional-json"
-    reportDir: "/hive/out"
-    reportFile: "output"
-    reportTitle: "ZAP Scanning Report"
-    reportDescription: ""
     displayReport: false
+    reportDescription: ''
+    reportDir: /zap/wrk/out/zap/
+    reportFile: zap-result
+    reportTitle: ZAP Scanning Report
+    template: traditional-json
   risks:
   - "low"
   - "medium"
