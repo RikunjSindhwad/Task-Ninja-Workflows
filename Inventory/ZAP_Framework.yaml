@@ -1,0 +1,152 @@
+---
+env:
+  contexts:
+  - name: "Default Context"
+    urls:
+    includePaths: []
+    excludePaths: []
+    authentication:
+      parameters: {}
+      verification:
+        method: "response"
+        pollFrequency: 60
+        pollUnits: "requests"
+    sessionManagement:
+      method: "cookie"
+      parameters: {}
+    technology:
+      exclude: []
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: false
+  vars: {}
+jobs:
+- parameters:
+    maxAlertsPerRule: 5
+    scanOnlyInScope: true
+    maxBodySizeInBytesToScan: 0
+    enableTags: false
+    disableAllRules: true
+  rules:
+  - id: 10033
+    name: "Directory Browsing"
+    threshold: "low"
+  - id: 10023
+    name: "Information Disclosure - Debug Error Messages"
+    threshold: "medium"
+  - id: 10028
+    name: "Open Redirect"
+    threshold: "medium"
+  - id: 90030
+    name: "WSDL File Detection"
+    threshold: "high"
+  - id: 10003
+    name: "Vulnerable JS Library (Powered by Retire.js)"
+    threshold: "high"
+  - id: 10062
+    name: "PII Disclosure"
+    threshold: "medium"
+  name: "passiveScan-config"
+  type: "passiveScan-config"
+- parameters:
+    context: ""
+    user: ""
+    url: ""
+    maxDuration: 2
+    maxDepth: 2
+    maxChildren: 0
+  name: "spider"
+  type: "spider"
+- parameters:
+    maxDuration: 10
+  name: "passiveScan-wait"
+  type: "passiveScan-wait"
+- parameters:
+    context: "Default Context"
+    user: ""
+    policy: ""
+    maxRuleDurationInMins: 10
+    maxScanDurationInMins: 60
+    maxAlertsPerRule: 0
+  policyDefinition:
+    defaultStrength: "medium"
+    defaultThreshold: "medium"
+    rules:
+    - id: 30001
+      name: "Buffer Overflow"
+      threshold: "off"
+      strength: "default"
+    - id: 30002
+      name: "Format String Error"
+      threshold: "off"
+      strength: "default"
+    - id: 10058
+      name: "GET for POST"
+      threshold: "off"
+      strength: "default"
+    - id: 90024
+      name: "Generic Padding Oracle"
+      threshold: "off"
+      strength: "default"
+    - id: 40035
+      name: "Hidden File Finder"
+      threshold: "off"
+      strength: "default"
+    - id: 20015
+      name: "Heartbleed OpenSSL Vulnerability"
+      threshold: "off"
+      strength: "default"
+    - id: 40008
+      name: "Parameter Tampering"
+      threshold: "off"
+      strength: "default"
+    - id: 20017
+      name: "Source Code Disclosure - CVE-2012-1823"
+      threshold: "off"
+      strength: "default"
+    - id: 10104
+      name: "User Agent Fuzzer"
+      threshold: "off"
+      strength: "default"
+    - id: 40029
+      name: "Trace.axd Information Leak"
+      threshold: "off"
+      strength: "default"
+    - id: 40003
+      name: "CRLF Injection"
+      threshold: "off"
+      strength: "default"
+    - id: 40028
+      name: "ELMAH Information Leak"
+      threshold: "off"
+      strength: "default"
+    - id: 0
+      name: "Directory Browsing"
+      threshold: "off"
+      strength: "default"
+    - id: 20018
+      name: "Remote Code Execution - CVE-2012-1823"
+      threshold: "off"
+      strength: "default"
+  name: "activeScan"
+  type: "activeScan"
+- parameters:
+    template: "traditional-json"
+    reportDir: "/hive/out"
+    reportFile: "output"
+    reportTitle: "ZAP Scanning Report"
+    reportDescription: ""
+    displayReport: false
+  risks:
+  - "low"
+  - "medium"
+  - "high"
+  confidences:
+  - "low"
+  - "medium"
+  - "high"
+  - "confirmed"
+  sites:
+  name: "report-json"
+  type: "report"
