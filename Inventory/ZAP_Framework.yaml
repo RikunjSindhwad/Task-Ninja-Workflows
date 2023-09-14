@@ -17,9 +17,9 @@ env:
     technology:
       exclude: []
   parameters:
-    failOnError: false
+    failOnError: true
     failOnWarning: false
-    progressToStdout: false
+    progressToStdout: true
   vars: {}
 jobs:
 - parameters:
@@ -53,22 +53,22 @@ jobs:
     context: ""
     user: ""
     url: ""
-    maxDuration: 2
+    maxDuration: 0
     maxDepth: 2
     maxChildren: 0
   name: "spider"
   type: "spider"
 - parameters:
-    maxDuration: 2
+    maxDuration: 1
   name: "passiveScan-wait"
   type: "passiveScan-wait"
 - parameters:
     context: "Default Context"
     user: ""
     policy: ""
-    maxRuleDurationInMins: 2
-    maxScanDurationInMins: 10
-    maxAlertsPerRule: 0
+    maxRuleDurationInMins: 0
+    maxScanDurationInMins: 2
+    maxAlertsPerRule: 10
   policyDefinition:
     defaultStrength: "medium"
     defaultThreshold: "medium"
@@ -132,12 +132,12 @@ jobs:
   name: "activeScan"
   type: "activeScan"
 - parameters:
-    displayReport: false
-    reportDescription: ''
-    reportDir: /zap/wrk/out/zap/
-    reportFile: zap-result
-    reportTitle: ZAP Scanning Report
-    template: traditional-json
+    template: "traditional-json"
+    reportDir: "/zap/wrk/out/zap/"
+    reportFile: "zap-result"
+    reportTitle: "ZAP Scanning Report"
+    reportDescription: ""
+    displayReport: true
   risks:
   - "low"
   - "medium"
