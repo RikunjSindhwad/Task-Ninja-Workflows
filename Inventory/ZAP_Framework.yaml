@@ -59,15 +59,15 @@ jobs:
   name: "spider"
   type: "spider"
 - parameters:
-    maxDuration: 10
+    maxDuration: 2
   name: "passiveScan-wait"
   type: "passiveScan-wait"
 - parameters:
     context: "Default Context"
     user: ""
     policy: ""
-    maxRuleDurationInMins: 10
-    maxScanDurationInMins: 60
+    maxRuleDurationInMins: 2
+    maxScanDurationInMins: 10
     maxAlertsPerRule: 0
   policyDefinition:
     defaultStrength: "medium"
