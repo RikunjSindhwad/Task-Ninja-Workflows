@@ -19,7 +19,7 @@ env:
   parameters:
     failOnError: true
     failOnWarning: false
-    progressToStdout: true
+    progressToStdout: false
   vars: {}
 jobs:
 - parameters:
@@ -68,7 +68,6 @@ jobs:
     policy: ""
     maxRuleDurationInMins: 0
     maxScanDurationInMins: 2
-    maxAlertsPerRule: 10
   policyDefinition:
     defaultStrength: "medium"
     defaultThreshold: "medium"
@@ -147,6 +146,6 @@ jobs:
   - "medium"
   - "high"
   - "confirmed"
-  sites:
+  sites: []
   name: "report-json"
   type: "report"
