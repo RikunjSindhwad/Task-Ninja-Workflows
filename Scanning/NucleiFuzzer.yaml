@@ -1,0 +1,80 @@
+config:
+  name: "NucleiFuzzer"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w NucleiFuzzer.yaml -v target=example.com,RESULT=result.txt"
+  # stdoutDir: logs # enable if wish to debug
+  # stderrDir: logs # enable if wish to debug
+vars:
+  target: ""
+  HIVE: "hive"
+  INPUT_DIR: "hive/in"
+  OUTPUT_DIR: "hive/out"
+  gau: "robensive/gau:latest"
+  katana: "projectdiscovery/katana:latest"
+  urldedupe: "robensive/urldedupe:latest"
+  blacklist: "swf,woff,woff2,eot,ttf,pngx,svg,gifx,ico,jpg,jpeg,gif,bmp,pdf,mp3,mp4,avi,csv,xls,xlsx,doc,docx,ppt,pptx,webp,png,css,js,xml,txt,exe,ts,.tn,css"
+  header: "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4585.0 Safari/537.36"
+  nuclei: "projectdiscovery/nuclei:latest"
+  dockerinput: "/hive/in"
+  dockeroutput: "/hive/out"
+  RESULT: "" # Modify final list name or provide with vars
+
+tasks:
+  - name: mkdir
+    silent: true
+    parallel: false
+    cmds:
+      - rm -rf {{OUTPUT_DIR}} {{INPUT_DIR}} logs
+      - mkdir -p {{OUTPUT_DIR}} {{INPUT_DIR}} logs
+  - name: Gau - Discovery
+    silent: true
+    parallel: true
+    timeout: 
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/gau
+      - sudo docker container run --rm -v $(pwd)/hive:/hive {{gau}} "{{target}}"  --fp --retries 5 --threads 100 --blacklist {{blacklist}} {{dockeroutput}}/gau/result.txt
+  - name: Katana - Crawling
+    silent: true
+    parallel: true
+    timeout: 
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/katana
+      - sudo docker container run --rm -v "$(pwd)/{{HIVE}}:/hive" {{katana}} -u {{target}} -no-color -headers "{{header}}" -concurrency 100 -known-files all -extension-filter "{{blacklist}}" -output  {{dockeroutput}}/katana/result.txt
+  - name: Merge Both
+    silent: true
+    parallel: false
+    required: 
+      - Gau - Discovery
+      - Katana - Crawling
+
+    cmds:
+      - cat {{OUTPUT_DIR}}/gau/result.txt {{OUTPUT_DIR}}/katana/result.txt | sort -u > {{OUTPUT_DIR}}/gau-katana.txt
+  - name: URLDedupe - Remove Duplicate URLS
+    silent: true
+    parallel: false
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/urldedupe
+      - sudo docker container run --rm -v "$(pwd)/{{HIVE}}:/hive" {{urldedupe}} -u {{dockeroutput}}/gau-katana.txt -s {{dockeroutput}}/urldedupe/result.txt
+  - name: Get Fuzzing Templates
+    silent: true
+    parallel: false
+    cmds:
+      # - rm -rf {{INPUT_DIR}}/nuclei-templates
+      - git clone https://github.com/projectdiscovery/fuzzing-templates {{INPUT_DIR}}/nuclei-templates
+  - name: Run Nuclei
+    silent: false
+    parallel: false
+    required: 
+      - Get Fuzzing Templates
+      - URLDedupe - Remove Duplicate URLS
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/nuclei
+      - sudo docker container run --rm -v "$(pwd)/{{HIVE}}:/hive" {{nuclei}} -silent -t {{dockerinput}}/nuclei-templates -l {{dockeroutput}}/urldedupe/result.txt -o {{dockeroutput}}/nuclei/nuclei-result.txt
+  - name: Result
+    silent: false
+    parallel: false
+    required: 
+      - Run Nuclei
+    cmds:
+      - cp {{OUTPUT_DIR}}/nuclei/nuclei-result.txt {{RESULT}}
+      - ehcho Result Saved in {{RESULT}}
