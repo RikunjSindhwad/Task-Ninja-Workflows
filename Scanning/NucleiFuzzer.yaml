@@ -2,8 +2,9 @@ config:
   name: "NucleiFuzzer"
   author: "Rikunj Sindhwad"
   usage: "./TaskNinja -w NucleiFuzzer.yaml -v target=example.com,RESULT=result.txt"
-  # stdoutDir: logs # enable if wish to debug
-  # stderrDir: logs # enable if wish to debug
+  shell: "/bin/bash"
+  # stdoutDir: logs
+  # stderrDir: logs
 vars:
   target: ""
   HIVE: "hive"
@@ -17,9 +18,16 @@ vars:
   nuclei: "projectdiscovery/nuclei:latest"
   dockerinput: "/hive/in"
   dockeroutput: "/hive/out"
-  RESULT: "" # Modify final list name or provide with vars
+  RESULT: "" # Modify final list name
 
 tasks:
+  - name: Validate Requirements
+    silent: false
+    parallel: false
+    stoponerr: true
+    cmds:
+      - programs=("docker" "cat" "cp")
+      - for program in "${programs[@]}"; do command -v "$program" >/dev/null 2>&1 || { echo >&2 "$program is not installed."; exit 1;}; done
   - name: mkdir
     silent: true
     parallel: false
