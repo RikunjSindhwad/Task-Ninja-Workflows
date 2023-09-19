@@ -1,7 +1,7 @@
 config:
   name: "ZAP Scanner"
   author: "Rikunj Sindhwad"
-  usage: "./TaskNinja -w zap_scanner.yaml -w url_list"
+  usage: "./TaskNinja -w zap_scanner.yaml -v url_list=urls.txt"
   # stdoutDir: log
   # stderrDir: log
 vars:
@@ -12,10 +12,16 @@ vars:
   DOCKER_OUT: "/hive/out"
   helperdocker: "robensive/zap-context_helper:latest"
   zapdocker: "ghcr.io/zaproxy/zaproxy:stable"
-  zapworkdir: "/zap/wrk"
   zap_yaml: "https://raw.githubusercontent.com/RikunjSindhwad/Task-Ninja-Workflows/main/Inventory/ZAP_Framework.yaml" # Input context yaml file here // Note: Modify MAX time if using default
   url_list: "" # Input List of URLS to scan
 tasks:
+ - name: Validate Requirements
+    silent: false
+    parallel: false
+    stoponerr: true
+    cmds:
+      - programs=("docker" "wget" "jq")
+      - for program in "${programs[@]}"; do command -v "$program" >/dev/null 2>&1 || { echo >&2 "$program is not installed."; exit 1;}; done
   - name: Create Required Directories
     silent: true
     parallel: false
@@ -27,7 +33,7 @@ tasks:
     parallel: false
     cmds:
       - wget '{{zap_yaml}}' -O {{INPUT_DIR}}/zap_scan.yaml
-  - name: Modify ZAP config
+  - name: Modify ZAP config 
     silent: true
     parallel: false
     cmds:
@@ -38,10 +44,12 @@ tasks:
     parallel: false
     cmds:
       - mkdir -p {{OUTPUT_DIR}}/zap
-      - sudo docker container run --user 0 --rm -v $(pwd)/hive:{{zapworkdir}} {{zapdocker}} zap.sh -cmd -autorun {{zapworkdir}}/out/zap_scan.yaml
+      - sudo docker container run --rm -v $(pwd)/hive:/zap/wrk {{zapdocker}} zap.sh -cmd -autorun /zap/wrk/out/zap_scan.yaml
   - name: Result-Check
     silent: false
     parallel: false
+    required:
+      - run ZAP
     cmds:
       - result=$(find {{OUTPUT_DIR}}/zap -type f -name '*.json')
       - jq -r '.site[].alerts[] | select(.instances) as $alert | .instances[] | [$alert.name, $alert.riskdesc, .uri, .param, .method, .evidence] | @csv' $result | tee {{OUTPUT_DIR}}/ZAP-Result.CSV
