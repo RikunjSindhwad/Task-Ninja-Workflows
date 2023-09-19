@@ -1,0 +1,65 @@
+config:
+  name: "APK URLs Checker"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w ApkURLExtract.yaml -v apkpath=apkpath.apk,RESULT=apkurls.txt"
+  shell: "/bin/bash"
+  # stdoutDir: logs
+  # stderrDir: logs
+vars:
+  apkpath: ""
+  HIVE: "hive"
+  INPUT_DIR: "hive/in"
+  OUTPUT_DIR: "hive/out"
+  apktool: "robensive/apktool:latest"
+  urldedupe: "robensive/urldedupe:latest"
+  dockerinput: "/hive/in"
+  dockeroutput: "/hive/out"
+  RESULT: "" # Modify final list name
+
+tasks:
+  - name: Validate Requirements
+    silent: true
+    parallel: false
+    stoponerr: true
+    cmds:
+      - programs=("docker" "grep" "cp" "sudo" "sort")
+      - for program in "${programs[@]}"; do command -v "$program" >/dev/null 2>&1 || { echo >&2 "$program is not installed."; exit 1;}; done
+  - name: Make Required Directories
+    silent: true
+    parallel: false
+    stoponerr: true
+    cmds:
+      - rm -rf {{OUTPUT_DIR}} {{INPUT_DIR}}
+      - mkdir -p {{OUTPUT_DIR}} {{INPUT_DIR}}
+  - name: Decompile APK
+    silent: true
+    parallel: false
+    stoponerr: true
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/apktool
+      - cp {{apkpath}} {{INPUT_DIR}}/input.apk
+      - docker container run --rm -v $(pwd)/hive:/hive {{apktool}} d {{dockerinput}}/input.apk -f -o {{dockeroutput}}/apktool/
+  - name: Extract URLS
+    silent: true
+    parallel: false
+    stoponerr: true
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/apkurls
+      - grep  -roIhE "https?://[a-zA-Z0-9./?=_-]*" {{OUTPUT_DIR}}/apktool/ | sort -u > {{OUTPUT_DIR}}/apkurls/apkurls.txt
+  - name: Remove Duplicates
+    silent: true
+    parallel: false
+    required:
+      - Extract URLS
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/urldedupe
+      - docker container run --rm -v "$(pwd)/{{HIVE}}:/hive" {{urldedupe}} -u {{dockeroutput}}/apkurls/apkurls.txt -s {{dockeroutput}}/urldedupe/result.txt
+  - name: Save Results
+    silent: false
+    parallel: false
+    required:
+      - Remove Duplicates
+    cmds:
+      - cp {{OUTPUT_DIR}}/urldedupe/result.txt {{RESULT}}
+      - echo Check-Result:$(ls {{RESULT}})
+      - echo IdentifiedURLS:$(cat {{RESULT}} | wc -l)
