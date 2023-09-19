@@ -1,11 +1,11 @@
 config:
   name: "Discovery Passive Subdomains"
   author: "Rikunj Sindhwad"
-  usage: "Task-Ninja -w passiveSubdomains -v list=tld.txt,RESULT=PassiveSubdomains-merged.txt"
+  usage: "Task-Ninja -w passiveSubdomainsDiscovery -v tld_list=tld.txt,RESULT=PassiveSubdomains.txt"
   # stdoutDir: log
   # stderrDir: log
 vars:
-  tld_list: "" # Target Domains (tesla.com || abc.come etc)
+  tld_list: ""
   HIVE: "hive"
   INPUT_DIR: "hive/in"
   OUTPUT_DIR: "hive/out"
@@ -14,20 +14,27 @@ vars:
   assetfinder: "robensive/assetfinder:latest" # done
   jidc-subdomains: "robensive/jidc-subdomains:latest" # done
   subdomain.center: "robensive/subdomain.center:latest" # done
-  # githubsubdomains: "robensive/github-subdomains:latest"  # You Can enable if you have AuthToken (wait for upgrade for sample)
+  githubsubdomains: "robensive/github-subdomains:latest"  # You Can enable if you have AutoToken
   findomain: "robensive/findomain"
   vita: "robensive/vita:latest"
   subfinder: "projectdiscovery/subfinder:latest" 
-  # chaos-client: "projectdiscovery/chaos-client"  # You Can enable if you have key (wait for upgrade for sample)
-  RESULT: "" # Modify final list name or specify with -v
+  # chaos-client: "projectdiscovery/chaos-client"  # You Can enable if you have key
+  RESULT: "" # Modify final list name
 
 tasks:
+  - name: Validate Requirements
+    silent: false
+    parallel: false
+    stoponerr: true
+    cmds:
+      - programs=("docker" "cat" "find")
+      - for program in "${programs[@]}"; do command -v "$program" >/dev/null 2>&1 || { echo >&2 "$program is not installed."; exit 1;}; done
   - name: Create Main Directories
     silent: true
     parallel: false
     cmds:
-      - rm -rf {{OUTPUT_DIR}} {{INPUT_DIR}}
-      - mkdir -p {{OUTPUT_DIR}} {{INPUT_DIR}}
+      - rm -rf {{OUTPUT_DIR}} {{INPUT_DIR}} log
+      - mkdir -p {{OUTPUT_DIR}} {{INPUT_DIR}} log
   - name: JIDC Subdomains
     silent: true
     parallel: true
