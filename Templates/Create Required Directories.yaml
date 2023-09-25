@@ -1,0 +1,6 @@
+  - name: Create Required Directories
+    silent: true
+    parallel: false
+    cmds:
+      - rm -rf {{OUTPUT_DIR}} {{INPUT_DIR}} # optional
+      - mkdir -p {{OUTPUT_DIR}} {{INPUT_DIR}}
