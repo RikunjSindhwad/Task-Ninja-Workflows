@@ -1,0 +1,7 @@
+ - name: Validate Requirements
+    silent: false
+    parallel: false
+    stoponerr: true
+    cmds:
+      - programs=("docker" "wget" "jq") # Add more based on requirements
+      - for program in "${programs[@]}"; do command -v "$program" >/dev/null 2>&1 || { echo >&2 "$program is not installed."; exit 1;}; done
