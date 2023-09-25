@@ -18,7 +18,7 @@ vars:
 
 tasks:
   - name: Validate Requirements
-    silent: true
+    silent: false
     parallel: false
     stoponerr: true
     cmds:
