@@ -1,0 +1,6 @@
+  - name: Run Nuclei
+    silent: true
+    parallel: false
+    cmds:
+      - cp {{LIST}} {{INPUT_DIR}}/subdomains.txt
+      - docker container run --rm -v "$(pwd)/{{HIVE}}:/hive" {{nucleidocker}} -j -nc -silent -list {{dockerinput}}/subdomains.txt -concurrency 300 -output {{dockeroutput}}/nuclei-result.json

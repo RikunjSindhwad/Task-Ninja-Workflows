@@ -1,0 +1,12 @@
+  vars:
+    blacklist: "swf,woff,woff2,eot,ttf,pngx,svg,gifx,ico,jpg,jpeg,gif,bmp,pdf,mp3,mp4,avi,csv,xls,xlsx,doc,docx,ppt,pptx,webp,png,css,js,xml,txt,exe,ts,.tn,css"
+    target: "TARGET"
+    gau: "robensive/gau:latest"
+
+  - name: Gau - Discovery
+    silent: true
+    parallel: true
+    timeout: 
+    cmds:
+      - mkdir -p {{OUTPUT_DIR}}/gau
+      - sudo docker container run --rm -v $(pwd)/hive:/hive {{gau}} "{{target}}"  --fp --retries 5 --threads 100 --blacklist {{blacklist}} {{dockeroutput}}/gau/result.txt
