@@ -136,7 +136,7 @@ jobs:
     reportFile: "zap-result"
     reportTitle: "ZAP Scanning Report"
     reportDescription: ""
-    displayReport: true
+    displayReport: false
   risks:
   - "low"
   - "medium"
