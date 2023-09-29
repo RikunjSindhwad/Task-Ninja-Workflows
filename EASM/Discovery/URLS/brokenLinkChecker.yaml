@@ -1,0 +1,56 @@
+config:
+  name: "Broken Link Checker"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w brokenLinkChecker.yaml -v list=<list of URLS>,RESULT=result.csv"
+  # stdoutDir: logs # Enable to save logs
+  # stderrDir: logs # Enable to save logs
+vars:
+  list: ""
+  HIVE: "hive"
+  INPUT_DIR: "hive/in"
+  OUTPUT_DIR: "hive/out"
+  linkchecker: "ghcr.io/linkchecker/linkchecker:latest"
+  dockerinput: "/hive/in"
+  dockeroutput: "/hive/out"
+  RESULT: "" # Modify final list name
+
+tasks:
+  - name: Validate Requirements
+    silent: true
+    parallel: false
+    stoponerr: true
+    cmds:
+      - programs=("docker")
+      - for program in "${programs[@]}"; do command -v "$program" >/dev/null 2>&1 || { echo >&2 "$program is not installed."; exit 1;}; done
+  - name: Make Required Directories
+    silent: false
+    parallel: false
+    stoponerr: true
+    cmds:
+      - rm -rf {{OUTPUT_DIR}} {{INPUT_DIR}}
+      - mkdir -p {{OUTPUT_DIR}} {{INPUT_DIR}}
+      - chmod 777 {{OUTPUT_DIR}} {{INPUT_DIR}}
+  - name: Check-BrokenLinks
+    silent: true
+    parallel: false
+    type: dynamic
+    dynamicFile: "{{list}}"
+    stoponerr: false
+    threads: 2
+    cmds: #UID-65534 ==> Nobody
+      - docker container run -u 65534 --rm -v  $(pwd)/hive:/mnt {{linkchecker}} {{dynamicFile}} -t 100 -F csv/utf-8//mnt/out/result-{{dynamicOut}}.csv --no-robots --check-extern
+  - name: Merge Results
+    silent: false
+    parallel: false
+    stoponerr: true
+    cmds:
+      - data=$(cat {{OUTPUT_DIR}}/*.csv | sed '/^#/d' | sed '/^urlname/d')
+      - header=$(cat {{OUTPUT_DIR}}/*.csv | grep "^urlname" | sort -u)
+      - echo $header > {{RESULT}}
+      - echo "$data" >> {{RESULT}}
+  - name: Check Results
+    silent: false
+    parallel: false
+    cmds:
+      - echo "Identified $(cat {{RESULT}} |  grep -v "^urlname" | wc -l) Potential Broken Links"
+      - echo check result CSV:\ {{RESULT}}
