@@ -138,7 +138,7 @@ LastResult = []
 for item_type, file_path in input_files.items():
     if file_path:
         item_list = read_file_lines(file_path)
-        result = process_items(item_list, item_type, apiKey, historic, sleep, args.sleep, args.maxretry)
+        result = process_items(item_list, item_type, apiKey, historic, args.sleep, args.maxretry)
         LastResult.extend(result)
 
 input_args = {
