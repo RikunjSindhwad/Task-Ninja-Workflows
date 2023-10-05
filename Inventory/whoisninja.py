@@ -150,7 +150,8 @@ input_args = {
 
 for item_type, item_value in input_args.items():
     if item_value:
-        process_items([item_value], item_type, apiKey, historic, args.sleep, args.maxretry)
+        result =  process_items([item_value], item_type, apiKey, historic, args.sleep, args.maxretry)
+        LastResult.extend(result)
 
 finalResult = list(dict.fromkeys(LastResult))
 save_list_to_file(output,finalResult)
