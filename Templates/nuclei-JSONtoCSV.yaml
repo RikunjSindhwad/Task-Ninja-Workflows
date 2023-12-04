@@ -1,7 +1,0 @@
-- name: CSV-Result
-    silent: false
-    parallel: false
-    required: 
-      - Run Nuclei
-    cmds:
-      - jq -r '["\(.["template-id"] // ""):\(.["matcher-name"] // "")",."type" // "",.info.severity // "",."matched-at" // "",if ."extracted-results" | type == "array" then (.["extracted-results"] | join(", ")) else ."extracted-results" // "" end,.ip // ""] | @csv' {{OUTPUT_DIR}}/nuclei-result.json > {{RESULT}}
