@@ -1,0 +1,43 @@
+config:
+  name: "APK URLs Extract"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w ApkURLExtract.yaml -v apkpath=apkpath.apk"
+  hive: "hive"
+  defaultimage: "alpine:latest"
+vars:
+  apkpath: ""
+tasks:
+  - name: Decompile APK
+    silent: true
+    stoponerr: true
+    image: "robensive/apktool:latest"
+    inputs:
+      - "{{apkpath}},input.apk"
+    cmds:
+      - " d -f -o {{hiveout}}/ {{hivein}}/input.apk"
+  - name: Extract URLS
+    silent: true
+    stoponerr: true
+    mounts:
+      - "Decompile APK"
+    cmds:
+      - 'grep  -roIhE "https?://[a-zA-Z0-9./?=_-]*" {{{Decompile APK:folder}}} | sort -u > {{hiveout}}/output.txt'
+  - name: Remove Duplicates
+    silent: true
+    image: "robensive/urldedupe:latest"
+    required:
+      - Extract URLS
+    mounts:
+      - "Extract URLS"
+    cmds:
+      - -u {{{Extract URLS:file}}} -s  {{hiveout}}/output.txt
+  - name: Save Results
+    silent: false
+    mounts:
+      - "Remove Duplicates"
+    required:
+      - Remove Duplicates
+    cmds:
+      - cp {{{Remove Duplicates:file}}} {{hiveout}}/result.txt
+      - "echo Check-Result: {{hosthiveout}}/result.txt"
+      - echo IdentifiedURLS:$(cat {{hiveout}}/result.txt | wc -l)

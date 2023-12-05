@@ -1,0 +1,121 @@
+config:
+  name: "Discovery Passive Subdomains"
+  author: "Rikunj Sindhwad"
+  usage: "Task-Ninja -w passiveSubdomainsDiscovery -v tld_list=tld.txt"
+  defaultimage: "alpine:latest"
+  logs: false
+vars:
+  tld_list: ""
+  chaos_key: ""
+  github_token: ""
+  subfinder_config: "./inputs/subfinder.conf" # modify
+tasks:
+  - name: JIDC Subdomains
+    silent: true
+    parallel: true
+    type: dynamic
+    image: "robensive/jidc-subdomains:latest"
+    dynamicFile: '{{tld_list}}'
+    threads: 3
+    cmds:
+      - '{{dynamicFile}} {{hiveout}}/output.txt'
+  - name: Subdomain Center Subdomains
+    silent: true
+    parallel: false
+    type: dynamic
+    image: "robensive/subdomain.center:latest"
+    dynamicFile: '{{tld_list}}'
+    threads: 3
+    cmds:
+      - '{{dynamicFile}} {{hiveout}}/output.txt'
+  - name: AssetFinder
+    silent: true
+    parallel: true
+    type: dynamic
+    dynamicFile: '{{tld_list}}'
+    image: "robensive/assetfinder:latest"
+    required:
+      - JIDC Subdomains
+      - Subdomain Center Subdomains
+    threads: 3
+    cmds:
+      - '--subs-only {{dynamicFile}} {{hiveout}}/output.txt'
+  - name: Findomain
+    silent: true
+    parallel: false
+    type: dynamic
+    dynamicFile: '{{tld_list}}'
+    image: "robensive/findomain:latest"
+    threads: 3
+    cmds:
+      - '-t {{dynamicFile}} --unique-output {{hiveout}}/output.txt'
+  - name: VITA Subdomains
+    silent: true
+    parallel: true
+    image: "robensive/vita:latest"
+    type: dynamic
+    dynamicFile: '{{tld_list}}'
+    threads: 3
+    cmds:
+      - "-d {{dynamicFile}} --subs-only {{hiveout}}/output.txt"
+  - name: Subfinder
+    silent: true
+    parallel: false
+    type: dynamic
+    image: "projectdiscovery/subfinder:latest"
+    dynamicFile: test/tld.txt
+    threads: 3
+    cmds:
+      - '-silent -d {{dynamicFile}} -provider-config {{subfinder_config}} -o {{hiveout}}/output.txt'
+  - name: Chaos
+    silent: true
+    parallel: true
+    type: dynamic
+    image: "projectdiscovery/chaos-client:latest"
+    dynamicFile: '{{tld_list}}'
+    threads: 3
+    cmds:
+      - '-key {{chaos_key}} -disable-update-check -d {{dynamicFile}} -o {{hiveout}}/output.txt'
+  - name: Github Subdomains
+    silent: true
+    parallel: true
+    type: dynamic
+    image: "robensive/github-subdomains:latest"
+    dynamicFile: '{{tld_list}}'
+    threads: 3
+    cmds:
+      - '-q {{dynamicFile}} -t {{github_token}} -k -o {{hiveout}}/output.txt'
+  - name: Merge All
+    silent: true
+    parallel: false
+    required: 
+      - JIDC Subdomains
+      - Subdomain Center Subdomains
+      - AssetFinder
+      - Findomain
+      - VITA Subdomains
+      - Subfinder
+      - Chaos
+      - Github Subdomains
+    mounts: 
+      - JIDC Subdomains
+      - Subdomain Center Subdomains
+      - AssetFinder
+      - Findomain
+      - VITA Subdomains
+      - Subfinder
+      - Chaos
+      - Github Subdomains
+    cmds:
+      - find {{hivein}} -type f -name "output.txt" -exec cat {} + | sort -n | uniq | tee {{hiveout}}/output.txt
+  - name: Result
+    silent: false
+    parallel: false
+    required: 
+      - Merge All
+    mounts:
+      - Merge All
+    cmds:
+      - sort -u {{{Merge All:file}}} > {{hiveout}}/result.txt
+      - 'echo Check-Result: {{hosthiveout}}/result.txt'
+      - echo IdentifiedLines:$(cat {{hiveout}}/result.txt | wc -l)
