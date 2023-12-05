@@ -28,5 +28,5 @@ This repository is licensed under the [MIT License](https://github.com/RikunjSin
 
 ---
 
-[!note]
-There are some private and tailored workflows designed for the task-ninja, You can reachout to [me](https://t.me/robensive) for pricing.
+>[!note]
+>There are some private and tailored workflows designed for the task-ninja, You can reachout to [me](https://t.me/robensive) for pricing.
