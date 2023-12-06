@@ -5,10 +5,10 @@ config:
   defaultimage: "alpine:latest"
   logs: false
 vars:
-  tld_list: ""
-  chaos_key: ""
-  github_token: ""
-  subfinder_config: "./inputs/subfinder.conf" # modify
+  tld_list: "" 
+  # chaos_key: "" # Optional if using it, uncomment part of yaml below
+  # github_token: "" # Optional if using it, uncomment part of yaml below
+  # subfinder_config: "./inputs/subfinder.conf" # Optional if using it, uncomment part of yaml below
 tasks:
   - name: JIDC Subdomains
     silent: true
@@ -66,25 +66,26 @@ tasks:
     dynamicFile: test/tld.txt
     threads: 3
     cmds:
-      - '-silent -d {{dynamicFile}} -provider-config {{subfinder_config}} -o {{hiveout}}/output.txt'
-  - name: Chaos
-    silent: true
-    parallel: true
-    type: dynamic
-    image: "projectdiscovery/chaos-client:latest"
-    dynamicFile: '{{tld_list}}'
-    threads: 3
-    cmds:
-      - '-key {{chaos_key}} -disable-update-check -d {{dynamicFile}} -o {{hiveout}}/output.txt'
-  - name: Github Subdomains
-    silent: true
-    parallel: true
-    type: dynamic
-    image: "robensive/github-subdomains:latest"
-    dynamicFile: '{{tld_list}}'
-    threads: 3
-    cmds:
-      - '-q {{dynamicFile}} -t {{github_token}} -k -o {{hiveout}}/output.txt'
+      # - '-silent -d {{dynamicFile}} -provider-config {{subfinder_config}} -o {{hiveout}}/output.txt'
+      - '-silent -d {{dynamicFile}} -o {{hiveout}}/output.txt'
+  # - name: Chaos
+  #   silent: true
+  #   parallel: true
+  #   type: dynamic
+  #   image: "projectdiscovery/chaos-client:latest"
+  #   dynamicFile: '{{tld_list}}'
+  #   threads: 3
+  #   cmds:
+  #     - '-key {{chaos_key}} -disable-update-check -d {{dynamicFile}} -o {{hiveout}}/output.txt'
+  # - name: Github Subdomains
+  #   silent: true
+  #   parallel: true
+  #   type: dynamic
+  #   image: "robensive/github-subdomains:latest"
+  #   dynamicFile: '{{tld_list}}'
+  #   threads: 3
+  #   cmds:
+  #     - '-q {{dynamicFile}} -t {{github_token}} -k -o {{hiveout}}/output.txt'
   - name: Merge All
     silent: true
     parallel: false
@@ -95,8 +96,8 @@ tasks:
       - Findomain
       - VITA Subdomains
       - Subfinder
-      - Chaos
-      - Github Subdomains
+      # - Chaos
+      # - Github Subdomains
     mounts: 
       - JIDC Subdomains
       - Subdomain Center Subdomains
@@ -104,8 +105,8 @@ tasks:
       - Findomain
       - VITA Subdomains
       - Subfinder
-      - Chaos
-      - Github Subdomains
+      # - Chaos
+      # - Github Subdomains
     cmds:
       - find {{hivein}} -type f -name "output.txt" -exec cat {} + | sort -n | uniq | tee {{hiveout}}/output.txt
   - name: Result
