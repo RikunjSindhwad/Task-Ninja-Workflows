@@ -1,0 +1,35 @@
+config:
+  name: "Dynamic Nmap Scanning Ninja"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w nmapNinja.yaml -v list=target_list.txt"
+  shell: "/bin/bash"
+  defaultimage: "alpine:latest"
+  hive: hive
+  logs: false
+
+vars:
+  list: ""
+tasks:
+  - name: Nmap Scans
+    silent: true
+    parallel: false
+    type: dynamic
+    dynamicFile: '{{list}}'
+    image: "robensive/nmap"
+    threads: 5
+    cmds:
+      - -p- -sV -oA {{hiveout}}/{{rand}} {{dynamicFile}} -Pn -n --min-rate 10000
+  - name: Result
+    silent: false
+    parallel: false
+    stoponerr: true
+    mounts:
+      - Nmap Scans
+    cmds:
+      - mkdir -p {{hiveout}}/XML {{hiveout}}/nmap {{hiveout}}/gnmap
+      - mv {{{Nmap Scans:folder}}}/*/out/*.xml {{hiveout}}/XML
+      - echo "XML Files are stored in {{hosthiveout}}/XML Count:$(ls {{hiveout}}/XML/ | wc -l)"
+      - mv {{{Nmap Scans:folder}}}/*/out/*.nmap {{hiveout}}/nmap
+      - echo "Nmap Files are stored in {{hosthiveout}}/nmap Count:$(ls {{hiveout}}/nmap/ | wc -l)"
+      - mv {{{Nmap Scans:folder}}}/*/out/*.gnmap {{hiveout}}/gnmap
+      - echo "Gnmap Files are stored in {{hosthiveout}}/gnmap Count:$(ls {{hiveout}}/gnmap/ | wc -l)"
