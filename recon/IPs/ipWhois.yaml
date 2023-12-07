@@ -1,0 +1,31 @@
+config:
+  name: "IP Whois"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w ipWhois.yaml -v list=ips.txt"
+  defaultimage: "alpine:latest"
+  logs: false
+
+vars:
+  list: ""
+tasks:
+  - name: Reverse WhoIS
+    silent: true
+    parallel: false
+    stoponerr: true
+    image: "robensive/whois:latest"
+    type: dynamic
+    dynamicFile: '{{list}}'
+    threads: 10
+    cmds:
+      - -h whois.cymru.com " -v {{dynamicFile}}" {{hiveout}}/output.txt
+  - name: Sort Unique
+    silent: false
+    parallel: false
+    required: 
+      - Reverse WhoIS
+    mounts:
+      - Reverse WhoIS
+    cmds:
+      - cat {{{Reverse WhoIS:folder}}}/*/*/output.txt | sort -n | uniq > {{hiveout}}/result.txt
+      - echo Result saved in {{hosthiveout}}/result.txt
+      - echo "Result Contains $(cat {{hiveout}}/result.txt | wc -l) Lines"
