@@ -1,0 +1,83 @@
+config:
+  name: "Hidden Parameters Discovery"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w HiddenParamDiscovery.yaml -v target=https://ginandjuice.shop"
+  defaultimage: "alpine:latest"
+  dockerhive: "hive"
+  logs: false
+vars:
+  target: ""
+  wordlist: https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/burp-parameter-names.txt
+  userAgent: "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+  jqcmd: '.[] | select(.found_params | length > 0) | [.url, .method, .status, (.found_params | map(.name + ":" + (.value // "null")) | join("\n")), .injection_place] | @csv'
+  blacklist: "swf,woff,woff2,eot,ttf,pngx,svg,gifx,ico,jpg,jpeg,gif,bmp,pdf,mp3,mp4,avi,csv,xls,xlsx,doc,docx,ppt,pptx,webp,png,css,js,xml"
+  blacklistmime: "'application/xml','application/json','text/x-javascript','application/ecmascript','text/javascript','application/javascript','application/x-shockwave-flash','font/woff','font/woff2','application/vnd.ms-fontobject','font/ttf','image/svg+xml','image/vnd.microsoft.icon','image/jpeg','image/jpeg','image/gif','image/bmp','application/pdf','audio/mpeg','video/mp4','video/x-msvideo','text/csv','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation','image/webp','image/png','text/css'"
+  filtermime: "contains_any(content_type,'application/xml','application/json','text/x-javascript','application/ecmascript','text/javascript','application/javascript','application/x-shockwave-flash','font/woff','font/woff2','application/vnd.ms-fontobject','font/ttf','image/svg+xml','image/vnd.microsoft.icon','image/jpeg','image/jpeg','image/gif','image/bmp','application/pdf','audio/mpeg','video/mp4','video/x-msvideo','text/csv','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation','image/webp','image/png','text/css')||contains_any(body,'Page Not Found','404 Not Found')"
+
+tasks:
+  - name: Gau
+    silent: true
+    parallel: false
+    stoponerr: true
+    image: "robensive/gau:latest"
+    cmds:
+      - '"{{target}}" --fp --retries 5 --threads 200 --blacklist "{{blacklist}}" --ft "{{blacklistmime}}" {{hiveout}}/output.txt'
+  - name: Katana
+    silent: true
+    parallel: false
+    stoponerr: false
+    image: "projectdiscovery/katana:latest"
+    required:
+      - Gau
+    mounts:
+      - Gau
+    cmds:
+      - '-u "{{{Gau:file}}}" -headers "{{header}}" -js-crawl -omit-raw -omit-body -concurrency 200 -known-files all -extension-filter "{{blacklist}}" -filter-condition "{{filtermime}}" -output {{hiveout}}/output.txt'
+  - name: Httpx
+    silent: true
+    parallel: false
+    stoponerr: false
+    image: "projectdiscovery/httpx:latest"
+    dockerhive: "/tmp/hive"
+    required:
+      - Katana
+    mounts:
+      - Katana
+    cmds:
+      - '-no-color -l "{{{Katana:file}}}" -timeout 10 -retries 5 -header "{{header}}" -match-code 200 -flc 1 -filter-condition "{{filtermime}}" -o {{hiveout}}/output.txt'
+  - name: GetUnique
+    silent: true
+    parallel: false
+    required:
+      - Httpx
+    image: "robensive/urldedupe:latest"
+    mounts:
+      - Httpx
+    stoponerr: true
+    cmds:
+      - '-u {{{Httpx:file}}} -s {{hiveout}}/output.txt'
+  - name: ParamDiscovery
+    silent: true
+    parallel: false
+    stoponerr: true
+    image: "robensive/x8:latest"
+    type: dynamic
+    inputs:
+      - "{{wordlist}},paramnames.txt"
+    dynamicFile: "{{{GetUnique:file}}}"
+    threads: 5 # Increase this if you have a better performance machine and internet connection
+    cmds:
+      - --output-format json --method GET POST -H '{{userAgent}}' --url '{{dynamicFile}}' --wordlist {{hivein}}/paramnames.txt --output {{hiveout}}/output.txt
+  - name: Result
+    silent: false
+    image: "robensive/jq:latest"
+    required:
+      - ParamDiscovery
+    mounts:
+      - ParamDiscovery
+    parallel: false
+    cmds:
+      - echo '"URL", "Method", "Status", "Parameter", "Location"' > {{hiveout}}/result.csv
+      - cat {{{ParamDiscovery:folder}}}/*/*/output.txt | jq -r '{{jqcmd}}' >> {{hiveout}}/result.csv
+      - echo result saved in {{hosthiveout}}/result.csv
+      - echo Identified $(cat {{hiveout}}/result.csv | grep -v URL | wc -l) unique and hidden parameters
