@@ -1,0 +1,35 @@
+config:
+  name: "Discover Web App Endpoints"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w webAppDiscovery.yaml -v list=subdomains_list.txt"
+  shell: "/bin/bash"
+  defaultimage: "alpine:latest"
+  hive: hive
+  logs: false
+
+vars:
+  list: ""
+  header: "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+  ports: "80,443,1221,2078,2083,4000,5000,5063,5600,8080,8083,8084,8090,8443,8888,9042,9082,9279,9282,10100,10201,50000"
+  dsl: contains_any(contains_any(body,'purchase this domain', 'domain is for sale', 'buy this domain')
+tasks:
+  - name: httpx   
+    silent: true
+    parallel: false
+    dynamicFile: '{{list}}'
+    stoponerr: false
+    image: "projectdiscovery/httpx:latest"
+    threads: 3
+    inputs:
+      - '{{list}},input.txt'
+    cmds:
+      - '-u {{dynamicFile}} -timeout 10 -ports "{{ports}}" -retries 2 -silent -no-color -fdc "{{dsl}}" -o {{hiveout}}/output.txt'
+  - name: Result
+    silent: false
+    parallel: false
+    mounts:
+      - httpx
+    stoponerr: true
+    cmds:
+      - 'cat {{{httpx:folder}}}/*/out/output.txt | sort -n | uniq > {{hiveout}}/result.txt'
+      - echo Result Saved in "{{hosthiveout}}/result.txt"
