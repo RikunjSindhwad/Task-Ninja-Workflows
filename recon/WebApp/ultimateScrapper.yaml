@@ -1,0 +1,61 @@
+config:
+  name: "Ultimate Web Scrapper"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w ultimateScrapper.yaml -v target=https://ginandjuice.shop"
+  defaultimage: "alpine:latest"
+  dockerhive: "hive"
+  logs: false
+vars:
+  target: ""
+  userAgent: "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+  blacklist: "swf,woff,woff2,eot,ttf,pngx,svg,gifx,ico,jpg,jpeg,gif,bmp,mp3,mp4,avi,webp,png,css"
+tasks:
+  - name: Gau
+    silent: true
+    parallel: false
+    stoponerr: true
+    image: "robensive/gau:latest"
+    cmds:
+      - '"{{target}}" --fp --retries 5 --threads 200 --blacklist "{{blacklist}}"  {{hiveout}}/output.txt'
+  - name: Katana
+    silent: true
+    parallel: false
+    stoponerr: false
+    image: "projectdiscovery/katana:latest"
+    type: dynamic
+    dynamicFile: "{{{Gau:file}}}"
+    threads: 10
+    required:
+      - Gau
+    mounts:
+      - Gau
+    cmds:
+      - '-u "{{dynamicFile}}" -headers "{{header}}" -js-crawl -omit-raw -omit-body -concurrency 200 -known-files all -extension-filter "{{blacklist}}"  -output {{hiveout}}/output.txt'
+  - name: Merge
+    silent: true
+    required:
+      - Katana
+    mounts:
+      - Katana
+    cmds:
+      - 'cat {{{Katana:folder}}}/*/out/output.txt| sort -n | uniq > {{hiveout}}/output.txt'
+  - name: GetUnique
+    silent: true
+    parallel: false
+    required:
+      - Merge
+    image: "robensive/urldedupe:latest"
+    mounts:
+      - Merge
+    stoponerr: true
+    cmds:
+      - '-u {{{Merge:file}}} -s {{hiveout}}/output.txt'
+  - name: Result
+    silent: false
+    parallel: false
+    mounts:
+      - GetUnique
+    cmds:
+      - cat {{{GetUnique:file}}} | sort -n | uniq > {{hiveout}}/output.txt
+      - echo Result Saved in "{{hosthiveout}}/output.txt"
+      - echo Identified $(cat {{hiveout}}/output.txt | wc -l) unique URLS
