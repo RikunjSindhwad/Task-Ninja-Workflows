@@ -9,8 +9,8 @@ vars:
   target: ""
   wordlist: https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/burp-parameter-names.txt
   userAgent: "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
-  jqcmd: '.[] | select(.found_params | length > 0) | [.url, .method, .status, (.found_params | map(.name + ":" + (.value // "null")) | join("\n")), .injection_place] | @csv'
-  blacklist: "swf,woff,woff2,eot,ttf,pngx,svg,gifx,ico,jpg,jpeg,gif,bmp,pdf,mp3,mp4,avi,csv,xls,xlsx,doc,docx,ppt,pptx,webp,png,css,js,xml"
+  jqcmd: '.[] | select(.found_params | length > 0) | [.url, .method, .status, (.found_params | map(.name + ":" + (.value // "null")) | join(", ")), .injection_place] | @csv'
+  blacklist: "swf,woff,woff2,eot,ttf,pngx,svg,gifx,ico,jpg,jpeg,gif,bmp,pdf,mp3,mp4,avi,csv,xls,xlsx,doc,docx,ppt,pptx,webp,png,css,js,xml,tn"
   blacklistmime: "'application/xml','application/json','text/x-javascript','application/ecmascript','text/javascript','application/javascript','application/x-shockwave-flash','font/woff','font/woff2','application/vnd.ms-fontobject','font/ttf','image/svg+xml','image/vnd.microsoft.icon','image/jpeg','image/jpeg','image/gif','image/bmp','application/pdf','audio/mpeg','video/mp4','video/x-msvideo','text/csv','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation','image/webp','image/png','text/css'"
   filtermime: "contains_any(content_type,'application/xml','application/json','text/x-javascript','application/ecmascript','text/javascript','application/javascript','application/x-shockwave-flash','font/woff','font/woff2','application/vnd.ms-fontobject','font/ttf','image/svg+xml','image/vnd.microsoft.icon','image/jpeg','image/jpeg','image/gif','image/bmp','application/pdf','audio/mpeg','video/mp4','video/x-msvideo','text/csv','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation','image/webp','image/png','text/css')||contains_any(body,'Page Not Found','404 Not Found')"
 
@@ -27,12 +27,34 @@ tasks:
     parallel: false
     stoponerr: false
     image: "projectdiscovery/katana:latest"
+    type: dynamic
+    dynamicFile: "{{{Gau:file}}}"
+    threads: 10
     required:
       - Gau
     mounts:
       - Gau
     cmds:
-      - '-u "{{{Gau:file}}}" -headers "{{header}}" -js-crawl -omit-raw -omit-body -concurrency 200 -known-files all -extension-filter "{{blacklist}}" -filter-condition "{{filtermime}}" -output {{hiveout}}/output.txt'
+      - '-u "{{dynamicFile}}" -headers "{{header}}" -js-crawl -omit-raw -omit-body -concurrency 200 -known-files all -extension-filter "{{blacklist}}" -filter-condition "{{filtermime}}" -output {{hiveout}}/output.txt'
+  - name: Merge
+    silent: true
+    required:
+      - Katana
+    mounts:
+      - Katana
+    cmds:
+      - 'cat {{{Katana:folder}}}/*/out/output.txt| sort -n | uniq > {{hiveout}}/output.txt'
+  - name: GetUnique1
+    silent: true
+    parallel: false
+    required:
+      - Merge
+    image: "robensive/urldedupe:latest"
+    mounts:
+      - Merge
+    stoponerr: true
+    cmds:
+      - '-u {{{Merge:file}}} -s {{hiveout}}/output.txt'
   - name: Httpx
     silent: true
     parallel: false
@@ -40,12 +62,12 @@ tasks:
     image: "projectdiscovery/httpx:latest"
     dockerhive: "/tmp/hive"
     required:
-      - Katana
+      - GetUnique1
     mounts:
-      - Katana
+      - GetUnique1
     cmds:
-      - '-no-color -l "{{{Katana:file}}}" -timeout 10 -retries 5 -header "{{header}}" -match-code 200 -flc 1 -filter-condition "{{filtermime}}" -o {{hiveout}}/output.txt'
-  - name: GetUnique
+      - '-no-color -l "{{{GetUnique1:file}}}" -t 300 -timeout 10 -retries 5 -header "{{header}}" -match-code 200 -flc 1 -filter-condition "{{filtermime}}" -o {{hiveout}}/output.txt'
+  - name: GetUnique2
     silent: true
     parallel: false
     required:
@@ -59,25 +81,28 @@ tasks:
   - name: ParamDiscovery
     silent: true
     parallel: false
-    stoponerr: true
+    stoponerr: false
     image: "robensive/x8:latest"
     type: dynamic
     inputs:
       - "{{wordlist}},paramnames.txt"
-    dynamicFile: "{{{GetUnique:file}}}"
-    threads: 5 # Increase this if you have a better performance machine and internet connection
+    dynamicFile: "{{{GetUnique2:file}}}"
+    threads: 10 # Increase this if you have a better performance machine and internet connection
     cmds:
-      - --output-format json --method GET POST -H '{{userAgent}}' --url '{{dynamicFile}}' --wordlist {{hivein}}/paramnames.txt --output {{hiveout}}/output.txt
+      - '--output-format json --method GET POST -H "{{userAgent}}" --url "{{dynamicFile}}" --wordlist {{hivein}}/paramnames.txt --output {{hiveout}}/output.txt'
   - name: Result
     silent: false
-    image: "robensive/jq:latest"
+    image: "robensive/csvkit:latest"
     required:
       - ParamDiscovery
     mounts:
       - ParamDiscovery
     parallel: false
     cmds:
-      - echo '"URL", "Method", "Status", "Parameter", "Location"' > {{hiveout}}/result.csv
+      - echo '"URL", "Method", "Status", "Parameters", "Location"' > {{hiveout}}/result.csv
       - cat {{{ParamDiscovery:folder}}}/*/*/output.txt | jq -r '{{jqcmd}}' >> {{hiveout}}/result.csv
-      - echo result saved in {{hosthiveout}}/result.csv
+      - cat {{hiveout}}/result.csv | csvlook -S --blanks  > {{hiveout}}/result.txt
+      - echo result saved in {{hosthiveout}}/result.csv and {{hosthiveout}}/result.txt
       - echo Identified $(cat {{hiveout}}/result.csv | grep -v URL | wc -l) unique and hidden parameters
+      - 'echo check sample: {{hosthiveout}}/result.txt'
+      - cat {{hiveout}}/result.csv | csvlook -S --blanks  --max-column-width 100 --max-rows 10
