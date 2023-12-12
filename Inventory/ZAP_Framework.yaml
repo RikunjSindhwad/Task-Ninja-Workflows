@@ -132,9 +132,9 @@ jobs:
   type: "activeScan"
 - parameters:
     template: "traditional-json"
-    reportDir: "/zap/wrk/out/zap/"
-    reportFile: "zap-result"
-    reportTitle: "ZAP Scanning Report"
+    reportDir: "/zap/wrk/out/"
+    reportFile: "output"
+    reportTitle: "Task-Ninja Automated ZAP Scanning Report"
     reportDescription: ""
     displayReport: false
   risks:
