@@ -146,6 +146,5 @@ jobs:
   - "medium"
   - "high"
   - "confirmed"
-  sites: []
   name: "report-json"
   type: "report"
