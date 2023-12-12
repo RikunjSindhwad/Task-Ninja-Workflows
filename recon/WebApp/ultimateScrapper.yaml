@@ -16,7 +16,7 @@ tasks:
     stoponerr: true
     image: "robensive/gau:latest"
     cmds:
-      - '"{{target}}" --fp --retries 5 --threads 200 --blacklist "{{blacklist}}"  {{hiveout}}/output.txt'
+      - '"{{target}}" --retries 5 --threads 200 --blacklist "{{blacklist}}"  {{hiveout}}/output.txt'
   - name: Katana
     silent: true
     parallel: false
