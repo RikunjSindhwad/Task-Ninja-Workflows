@@ -1,0 +1,30 @@
+config:
+  name: "Dump Subdomains From crt.sh"
+  author: "Rikunj Sindhwad"
+  usage: "./TaskNinja -w crt.sh_subdomains.yaml -v list=domains.txt"
+  defaultimage: "alpine:latest"
+  dockerhive: "hive"
+  logs: false
+vars:
+  list: ""
+tasks:
+  - name: crt.sh
+    silent: true
+    parallel: false
+    stoponerr: true
+    image: "robensive/crtshsubdomains:latest"
+    type: dynamic
+    dynamicFile: "{{list}}"
+    threads: 10
+    cmds:
+      - '{{dynamicFile}} {{hiveout}}/output.txt'
+  - name: Result
+    silent: false
+    required:
+      - crt.sh
+    mounts:
+      - crt.sh
+    cmds:
+      - 'cat {{{crt.sh:folder}}}/*/out/output.txt| sort -n | uniq > {{hiveout}}/output.txt'
+      - 'echo "Total Subdomains: $(wc -l {{hiveout}}/output.txt)"'
+      - 'echo "Result saved in {{hosthiveout}}/output.txt"'
