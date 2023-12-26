@@ -6,10 +6,6 @@ Welcome to the Task-Ninja-Workflows repository! This repository is a collection 
 
 | Category            | File                                                                                   | Description                                           |
 |---------------------|----------------------------------------------------------------------------------------|-------------------------------------------------------|
-| **Inventory**       | [.cent.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/Inventory/.cent.yaml) | Configuration for managing community templates.      |
-|                     | [whoisninja.py](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/Inventory/Tools/whoisninja.py) | Reverse WHOIS lookup script.                         |
-|                     | [ZAP_Framework.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/Inventory/ZAP_Framework.yaml) | ZAP framework configuration for web scanning.        |
-|                     | [zap-config-trickest.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/Inventory/zap-config-trickest.yaml) | ZAP configuration for TriCkster platform.            |
 | **Discovery**       | [passiveSubdomains.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/discovery/subdomains/passiveSubdomains.yaml) | Workflow for passive subdomain discovery.            |
 |                     | [nmapNinja.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/discovery/services/nmapNinja.yaml) | Nmap scanning for service discovery.                 |
 |                     | [HiddenParamDiscovery.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/discovery/WebApp/HiddenParamDiscovery.yaml) | Discover hidden parameters in web applications.      |
@@ -17,8 +13,9 @@ Welcome to the Task-Ninja-Workflows repository! This repository is a collection 
 | **Reconnaissance**  | [ApkURLExtract.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/recon/mobile/ApkURLExtract.yaml) | Mobile recon workflow for extracting URLs from APKs. |
 |                     | [ipWhois.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/recon/IPs/ipWhois.yaml) | IP WHOIS lookup for reconnaissance.                  |
 |                     | [ultimateScrapper.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/recon/WebApp/ultimateScrapper.yaml) | Comprehensive web application scraping workflow.     |
-| **Vulnerability**   | [nucleiFuzzer.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/vulnerability/Web-Applications/nucleiFuzzer.yaml) | Web application vulnerability assessment workflow.   |
+| **Vulnerability**   | [nucleiFuzzer.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/vulnerability/Web-Applications/nucleiFuzzer.yaml) | Task-Ninja ported [NucleiFuzzer](https://github.com/0xKayala/NucleiFuzzer).   |
 |                     | [xss_Scanner.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/vulnerability/Web-Applications/xss_Scanner.yaml) | Workflow for scanning XSS vulnerabilities.           |
+|                     | [ultimateTakeover.yaml](https://github.com/RikunjSindhwad/Task-Ninja-Workflows/blob/main/vulnerability/Web-Applications/ultimateTakeover.yaml) | Ultimate Subdomain Takeover Workflow.           |
 
 
 ## Usage
