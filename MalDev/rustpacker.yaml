@@ -1,0 +1,170 @@
+config:
+  name: "Rust Packer Binary Creator"
+  author: "Rikunj Sindhwad"
+  usage: "./Task-Ninja -w rustpacker.yaml -v shellcode=<rawshellcodepath>,process=<procname_to_inject>"
+  shell: "/bin/bash"
+  defaultimage: "alpine:latest"
+  logs: false
+
+vars:
+  shellcode: ""
+  process: "dllhost.exe" # default 
+
+tasks: 
+  - name: ntAPC-XOR-exe
+    parallel: true
+    image: robensive/rustpacker:latest
+    silent: true
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e xor -i ntapc -t {{process}} {{hiveout}}/ntApcXOR.exe'
+  - name: ntAPC-AES-exe
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e aes -i ntapc -t {{process}} {{hiveout}}/ntApcAES.exe'
+  - name: ntAPC-XOR-dll
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e xor -i ntapc -t {{process}} {{hiveout}}/ntApcXOR.dll'
+  - name: ntAPC-AES-dll
+    parallel: false
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e aes -i ntapc -t {{process}} {{hiveout}}/ntApcAES.dll'
+#NT-CRT
+  - name: ntCRT-XOR-exe
+    parallel: true
+    image: robensive/rustpacker:latest
+    silent: true
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e xor -i ntcrt -t {{process}} {{hiveout}}/ntCrtXOR.exe'
+  - name: ntCRT-AES-exe
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e aes -i ntcrt -t {{process}} {{hiveout}}/ntCrtAES.exe'
+  - name: ntCRT-XOR-dll
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e xor -i ntcrt -t {{process}} {{hiveout}}/ntCrtXOR.dll'
+  - name: ntCRT-AES-dll
+    parallel: false
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e aes -i ntcrt -t {{process}} {{hiveout}}/ntCrtAES.dll'
+#SYS-CRT
+  - name: sysCRT-XOR-exe
+    parallel: true
+    image: robensive/rustpacker:latest
+    silent: true
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e xor -i syscrt -t {{process}} {{hiveout}}/sysCrtXOR.exe'
+  - name: sysCRT-AES-exe
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e aes -i syscrt -t {{process}} {{hiveout}}/sysCrtAES.exe'
+  - name: sysCRT-XOR-dll
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e xor -i syscrt -t {{process}} {{hiveout}}/sysCrtXOR.dll'
+  - name: sysCRT-AES-dll
+    parallel: false
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e aes -i syscrt -t {{process}} {{hiveout}}/sysCrtAES.dll'
+
+  - name: winCRT-XOR-exe
+    parallel: true
+    image: robensive/rustpacker:latest
+    silent: true
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e xor -i wincrt -t {{process}} {{hiveout}}/winCRTXOR.exe'
+  - name: winCRT-AES-exe
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b exe -e aes -i wincrt -t {{process}} {{hiveout}}/winCRTAES.exe'
+  - name: winCRT-XOR-dll
+    parallel: true
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e xor -i wincrt -t {{process}} {{hiveout}}/winCRTXOR.dll'
+  - name: winCRT-AES-dll
+    parallel: false
+    silent: true
+    image: robensive/rustpacker:latest
+    inputs:
+      - '{{shellcode}},shellcode.raw'
+    cmds:
+      - '-f {{hivein}}/shellcode.raw -b dll -e aes -i wincrt -t {{process}} {{hiveout}}/winCRTAES.dll'
+  - name: Results
+    parallel: false
+    silent: false
+    mounts:
+      - ntAPC-XOR-exe
+      - ntAPC-AES-exe
+      - ntAPC-XOR-dll
+      - ntAPC-AES-dll
+      - ntCRT-XOR-exe
+      - ntCRT-AES-exe
+      - ntCRT-XOR-dll
+      - ntCRT-AES-dll
+      - sysCRT-XOR-exe
+      - sysCRT-AES-exe
+      - sysCRT-XOR-dll
+      - sysCRT-AES-dll
+      - winCRT-XOR-exe
+      - winCRT-AES-exe
+      - winCRT-XOR-dll
+      - winCRT-AES-dll
+    cmds:
+      - find {{hivein}} -type f \( -name "*.dll" -o -name "*.exe" \) -exec cp {} "{{hiveout}}" \;
+      - echo "Results saved in {{hosthiveout}}"
+      - ls {{hiveout}}
+      - 'echo "Total Files: $(ls {{hiveout}} | wc -l)"'
+
